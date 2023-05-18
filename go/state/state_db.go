@@ -50,6 +50,10 @@ type StateDB interface {
 	// GetLogs provides logs produced in the current transaction.
 	GetLogs() []*common.Log
 
+	// SHA3 preimages seen by the VM:
+	AddPreimage(hash common.Hash, preimage []byte)
+	Preimages() map[common.Hash][]byte
+
 	// Access list tracking.
 	ClearAccessList()
 	AddAddressToAccessList(common.Address)
@@ -139,6 +143,9 @@ type stateDB struct {
 
 	// The amount of logs in the current block.
 	logsInBlock uint
+
+	// A list of SHA3 preimages that have been submitted.
+	preimages map[common.Hash][]byte
 
 	// A set of accessed addresses in the current transaction.
 	accessedAddresses map[common.Address]bool
@@ -868,6 +875,21 @@ func (s *stateDB) GetLogs() []*common.Log {
 	return s.logs
 }
 
+func (s *stateDB) AddPreimage(hash common.Hash, preimage []byte) {
+	if _, ok := s.preimages[hash]; !ok {
+		pi := make([]byte, len(preimage))
+		copy(pi, preimage)
+		s.preimages[hash] = pi
+		s.undo = append(s.undo, func() {
+			delete(s.preimages, hash)
+		})
+	}
+}
+
+func (s *stateDB) Preimages() map[common.Hash][]byte {
+	return s.preimages
+}
+
 func (s *stateDB) ClearAccessList() {
 	if len(s.accessedAddresses) > 0 {
 		s.accessedAddresses = make(map[common.Address]bool)
@@ -1212,6 +1234,7 @@ func (s *stateDB) reset() {
 	s.clearedAccounts = make(map[common.Address]accountClearingState)
 	s.codes = make(map[common.Address]*codeValue)
 	s.logsInBlock = 0
+	s.preimages = make(map[common.Hash][]byte)
 	s.resetTransactionContext()
 }
 
