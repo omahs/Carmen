@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/Fantom-foundation/Carmen/go/state/cppstate"
 	"math/big"
 	"reflect"
 	"strings"
@@ -2883,7 +2884,7 @@ func TestCarmenThereCanBeMultipleBulkLoadPhases(t *testing.T) {
 }
 
 func TestCarmenThereCanBeMultipleBulkLoadPhasesOnRealState(t *testing.T) {
-	for _, config := range initStates() {
+	for _, config := range cppstate.initStates() {
 		for _, archiveType := range allArchiveTypes {
 			config := config
 			archiveType := archiveType
@@ -2915,7 +2916,7 @@ func TestCarmenThereCanBeMultipleBulkLoadPhasesOnRealState(t *testing.T) {
 }
 
 func TestCarmenBulkLoadsCanBeInterleavedWithRegularUpdates(t *testing.T) {
-	for _, config := range initStates() {
+	for _, config := range cppstate.initStates() {
 		for _, archiveType := range allArchiveTypes {
 			config := config
 			archiveType := archiveType
@@ -2973,7 +2974,7 @@ func TestCarmenStateGetMemoryFootprintIsReturnedAndNotZero(t *testing.T) {
 func testCarmenStateDbHashAfterModification(t *testing.T, mod func(s StateDB)) {
 	want := map[StateSchema]common.Hash{}
 	for _, s := range GetAllSchemas() {
-		ref_state, err := getReferenceStateFor(Parameters{Directory: t.TempDir(), Schema: s})
+		ref_state, err := cppstate.getReferenceStateFor(Parameters{Directory: t.TempDir(), Schema: s})
 		if err != nil {
 			t.Fatalf("failed to create reference state: %v", err)
 		}
@@ -2985,7 +2986,7 @@ func testCarmenStateDbHashAfterModification(t *testing.T, mod func(s StateDB)) {
 		want[s] = ref.GetHash()
 	}
 	for i := 0; i < 3; i++ {
-		for _, config := range initStates() {
+		for _, config := range cppstate.initStates() {
 			config := config
 			t.Run(fmt.Sprintf("%v/run=%d", config.name, i), func(t *testing.T) {
 				t.Parallel()
@@ -3102,7 +3103,7 @@ const numSlots = 1000
 // TestPersistentStateDB modifies stateDB first, then it is closed and is re-opened in another process,
 // and it is tested that data are available, i.e. all was successfully persisted
 func TestPersistentStateDB(t *testing.T) {
-	for _, config := range initStates() {
+	for _, config := range cppstate.initStates() {
 		// skip in-memory
 		if strings.HasPrefix(config.name, "cpp-memory") || strings.HasPrefix(config.name, "go-Memory") {
 			continue
@@ -3167,7 +3168,7 @@ func TestPersistentStateDB(t *testing.T) {
 					t.Errorf("Cannot close state: %v", err)
 				}
 
-				execSubProcessTest(t, dir, config.name, archiveType, "TestStateDBRead")
+				cppstate.execSubProcessTest(t, dir, config.name, archiveType, "TestStateDBRead")
 			})
 		}
 	}
@@ -3178,11 +3179,11 @@ func TestPersistentStateDB(t *testing.T) {
 // Name of the index and directory is provided as command line arguments
 func TestStateDBRead(t *testing.T) {
 	// do not runt this test stand-alone
-	if *stateDir == "DEFAULT" {
+	if *cppstate.stateDir == "DEFAULT" {
 		return
 	}
 
-	s := createState(t, *stateImpl, *stateDir, *archiveImpl)
+	s := cppstate.createState(t, *cppstate.stateImpl, *cppstate.stateDir, *cppstate.archiveImpl)
 	defer func() {
 		_ = s.Close()
 	}()
@@ -3296,7 +3297,7 @@ func toKey(key uint64) common.Key {
 }
 
 func TestStateDBArchive(t *testing.T) {
-	for _, config := range initStates() {
+	for _, config := range cppstate.initStates() {
 		for _, archiveType := range allArchiveTypes {
 			if archiveType == NoArchive {
 				continue
@@ -3364,7 +3365,7 @@ func TestStateDBArchive(t *testing.T) {
 func TestStateDBSupportsConcurrentAccesses(t *testing.T) {
 	const N = 10  // number of concurrent goroutines
 	const M = 100 // number of updates per goroutine
-	for _, config := range initStates() {
+	for _, config := range cppstate.initStates() {
 		for _, archiveType := range []ArchiveType{NoArchive /*LevelDbArchive, SqliteArchive*/} {
 			config := config
 			archiveType := archiveType

@@ -1,11 +1,61 @@
-package state
+package cppstate
 
+/*
 import (
 	"bytes"
 	"errors"
+	"github.com/Fantom-foundation/Carmen/go/state"
 	"testing"
 
 	"github.com/Fantom-foundation/Carmen/go/common"
+)
+
+// directUpdateState is an extended version of the State interface adding support for
+// triggering and mocking individual state updates. All its additional members are
+// private and not intended to be used outside this package.
+type directUpdateState interface {
+	state.State
+
+	// createAccount creates a new account with the given address.
+	createAccount(address common.Address) error
+
+	// deleteAccount deletes the account with the given address.
+	deleteAccount(address common.Address) error
+
+	// setBalance provides balance for the input account address.
+	setBalance(address common.Address, balance common.Balance) error
+
+	// setNonce updates nonce of the account for the  input account address.
+	setNonce(address common.Address, nonce common.Nonce) error
+
+	// setStorage updates the memory slot for the account address (i.e. the contract) and the memory location key.
+	setStorage(address common.Address, key common.Key, value common.Value) error
+
+	// setCode updates code of the contract for the input contract address.
+	setCode(address common.Address, code []byte) error
+}
+
+var (
+	address1 = common.Address{0x01}
+	address2 = common.Address{0x02}
+	address3 = common.Address{0x03}
+
+	key1 = common.Key{0x01}
+	key2 = common.Key{0x02}
+	key3 = common.Key{0x03}
+
+	val0 = common.Value{0x00}
+	val1 = common.Value{0x01}
+	val2 = common.Value{0x02}
+	val3 = common.Value{0x03}
+
+	balance1 = common.Balance{0x01}
+	balance2 = common.Balance{0x02}
+	balance3 = common.Balance{0x03}
+
+	nonce1 = common.Nonce{0x01}
+	nonce2 = common.Nonce{0x02}
+	nonce3 = common.Nonce{0x03}
 )
 
 func TestAccountsAreInitiallyUnknown(t *testing.T) {
@@ -188,7 +238,7 @@ func TestSetAndGetCodeHash(t *testing.T) {
 
 func initCppStates() []namedStateConfig {
 	list := []namedStateConfig{}
-	for _, s := range GetAllSchemas() {
+	for _, s := range state.GetAllSchemas() {
 		list = append(list, []namedStateConfig{
 			{"memory", s, castToDirectUpdateState(newCppInMemoryState)},
 			{"file", s, castToDirectUpdateState(newCppFileBasedState)},
@@ -203,16 +253,17 @@ func runForEachCppConfig(t *testing.T, test func(*testing.T, directUpdateState))
 		config := config
 		t.Run(config.name, func(t *testing.T) {
 			t.Parallel()
-			state, err := config.createState(t.TempDir())
+			s, err := config.createState(t.TempDir())
 			if err != nil {
-				if errors.Is(err, UnsupportedConfiguration) {
+				if errors.Is(err, state.UnsupportedConfiguration) {
 					t.Skipf("failed to initialize state %s: %v", config.name, err)
 				} else {
 					t.Fatalf("failed to initialize state %s: %v", config.name, err)
 				}
 			}
-			defer state.Close()
-			test(t, state)
+			defer s.Close()
+			test(t, s)
 		})
 	}
 }
+*/

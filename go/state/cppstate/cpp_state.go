@@ -1,4 +1,4 @@
-package state
+package cppstate
 
 //go:generate sh ../lib/build_libcarmen.sh
 
@@ -13,6 +13,7 @@ import "C"
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/Fantom-foundation/Carmen/go/state"
 	"unsafe"
 
 	"github.com/Fantom-foundation/Carmen/go/backend"
@@ -30,30 +31,30 @@ type CppState struct {
 	codeCache *common.Cache[common.Address, []byte]
 }
 
-func newCppState(impl C.enum_StateImpl, params Parameters) (State, error) {
+func newCppState(impl C.enum_StateImpl, params state.Parameters) (state.State, error) {
 	dir := C.CString(params.Directory)
 	defer C.free(unsafe.Pointer(dir))
 
 	state := C.Carmen_OpenState(C.C_Schema(params.Schema), impl, C.enum_StateImpl(params.Archive), dir, C.int(len(params.Directory)))
 	if state == unsafe.Pointer(nil) {
-		return nil, fmt.Errorf("%w: failed to create C++ state instance for parameters %v", UnsupportedConfiguration, params)
+		return nil, fmt.Errorf("%w: failed to create C++ state instance for parameters %v", state.UnsupportedConfiguration, params)
 	}
 
-	return wrapIntoSyncedState(&CppState{
+	return state.wrapIntoSyncedState(&CppState{
 		state:     state,
 		codeCache: common.NewCache[common.Address, []byte](CodeCacheSize),
 	}), nil
 }
 
-func newCppInMemoryState(params Parameters) (State, error) {
+func newCppInMemoryState(params state.Parameters) (state.State, error) {
 	return newCppState(C.kState_Memory, params)
 }
 
-func newCppFileBasedState(params Parameters) (State, error) {
+func newCppFileBasedState(params state.Parameters) (state.State, error) {
 	return newCppState(C.kState_File, params)
 }
 
-func newCppLevelDbBasedState(params Parameters) (State, error) {
+func newCppLevelDbBasedState(params state.Parameters) (state.State, error) {
 	return newCppState(C.kState_LevelDb, params)
 }
 
@@ -231,7 +232,7 @@ func (cs *CppState) GetMemoryFootprint() *common.MemoryFootprint {
 	return res
 }
 
-func (cs *CppState) GetArchiveState(block uint64) (State, error) {
+func (cs *CppState) GetArchiveState(block uint64) (state.State, error) {
 	return &CppState{
 		state:     C.Carmen_GetArchiveState(cs.state, C.uint64_t(block)),
 		codeCache: common.NewCache[common.Address, []byte](CodeCacheSize),

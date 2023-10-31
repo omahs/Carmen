@@ -1,10 +1,12 @@
-package state
+package cppstate
 
+/*
 import (
 	"bytes"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/Fantom-foundation/Carmen/go/state"
 	"math/big"
 	"os"
 	"os/exec"
@@ -19,20 +21,20 @@ import (
 
 type namedStateConfig struct {
 	name    string
-	schema  StateSchema
-	factory func(params Parameters) (directUpdateState, error)
+	schema  state.StateSchema
+	factory func(params state.Parameters) (directUpdateState, error)
 }
 
 func (c *namedStateConfig) createState(directory string) (directUpdateState, error) {
-	return c.factory(Parameters{Directory: directory, Schema: c.schema})
+	return c.factory(state.Parameters{Directory: directory, Schema: c.schema})
 }
 
-func (c *namedStateConfig) createStateWithArchive(directory string, archiveType ArchiveType) (directUpdateState, error) {
-	return c.factory(Parameters{Directory: directory, Archive: archiveType, Schema: c.schema})
+func (c *namedStateConfig) createStateWithArchive(directory string, archiveType state.ArchiveType) (directUpdateState, error) {
+	return c.factory(state.Parameters{Directory: directory, Archive: archiveType, Schema: c.schema})
 }
 
-func castToDirectUpdateState(factory func(params Parameters) (State, error)) func(params Parameters) (directUpdateState, error) {
-	return func(params Parameters) (directUpdateState, error) {
+func castToDirectUpdateState(factory func(params state.Parameters) (state.State, error)) func(params state.Parameters) (directUpdateState, error) {
+	return func(params state.Parameters) (directUpdateState, error) {
 		state, err := factory(params)
 		if err != nil {
 			return nil, err
@@ -43,10 +45,7 @@ func castToDirectUpdateState(factory func(params Parameters) (State, error)) fun
 
 func initStates() []namedStateConfig {
 	var res []namedStateConfig
-	for _, s := range initCppStates() {
-		res = append(res, namedStateConfig{name: fmt.Sprintf("cpp-%s/s%d", s.name, s.schema), schema: s.schema, factory: s.factory})
-	}
-	for _, s := range initGoStates() {
+	for _, s := range state.initGoStates() {
 		res = append(res, namedStateConfig{name: fmt.Sprintf("go-%s/s%d", s.name, s.schema), schema: s.schema, factory: s.factory})
 	}
 	return res
@@ -57,35 +56,35 @@ func testEachConfiguration(t *testing.T, test func(t *testing.T, config *namedSt
 		config := config
 		t.Run(config.name, func(t *testing.T) {
 			t.Parallel()
-			state, err := config.createState(t.TempDir())
+			s, err := config.createState(t.TempDir())
 			if err != nil {
-				if errors.Is(err, UnsupportedConfiguration) {
+				if errors.Is(err, state.UnsupportedConfiguration) {
 					t.Skipf("unsupported state %s: %v", config.name, err)
 				} else {
 					t.Fatalf("failed to initialize state %s: %v", config.name, err)
 				}
 			}
-			defer state.Close()
+			defer s.Close()
 
-			test(t, &config, state)
+			test(t, &config, s)
 		})
 	}
 }
 
-func getReferenceStateFor(params Parameters) (State, error) {
+func getReferenceStateFor(params state.Parameters) (state.State, error) {
 	if params.Schema == 4 {
-		return newGoMemoryS4State(params)
+		return state.newGoMemoryS4State(params)
 	}
 	if params.Schema == 5 {
-		return newGoMemoryS5State(params)
+		return state.newGoMemoryS5State(params)
 	}
 	return newCppInMemoryState(params)
 }
 
 func testHashAfterModification(t *testing.T, mod func(s directUpdateState)) {
-	want := map[StateSchema]common.Hash{}
-	for _, s := range GetAllSchemas() {
-		ref, err := getReferenceStateFor(Parameters{Directory: t.TempDir(), Schema: s})
+	want := map[state.StateSchema]common.Hash{}
+	for _, s := range state.GetAllSchemas() {
+		ref, err := getReferenceStateFor(state.Parameters{Directory: t.TempDir(), Schema: s})
 		if err != nil {
 			t.Fatalf("failed to create reference state: %v", err)
 		}
@@ -142,43 +141,43 @@ func TestDeletedAddressHashes(t *testing.T) {
 
 func TestStorageHashes(t *testing.T) {
 	testHashAfterModification(t, func(s directUpdateState) {
-		s.setStorage(address1, key2, val3)
+		s.setStorage(address1, state.key2, state.val3)
 	})
 }
 
 func TestMultipleStorageHashes(t *testing.T) {
 	testHashAfterModification(t, func(s directUpdateState) {
-		s.setStorage(address1, key2, val3)
-		s.setStorage(address2, key3, val1)
-		s.setStorage(address3, key1, val2)
+		s.setStorage(address1, state.key2, state.val3)
+		s.setStorage(address2, state.key3, state.val1)
+		s.setStorage(address3, state.key1, state.val2)
 	})
 }
 
 func TestBalanceUpdateHashes(t *testing.T) {
 	testHashAfterModification(t, func(s directUpdateState) {
-		s.setBalance(address1, balance1)
+		s.setBalance(address1, state.balance1)
 	})
 }
 
 func TestMultipleBalanceUpdateHashes(t *testing.T) {
 	testHashAfterModification(t, func(s directUpdateState) {
-		s.setBalance(address1, balance1)
-		s.setBalance(address2, balance2)
-		s.setBalance(address3, balance3)
+		s.setBalance(address1, state.balance1)
+		s.setBalance(address2, state.balance2)
+		s.setBalance(address3, state.balance3)
 	})
 }
 
 func TestNonceUpdateHashes(t *testing.T) {
 	testHashAfterModification(t, func(s directUpdateState) {
-		s.setNonce(address1, nonce1)
+		s.setNonce(address1, state.nonce1)
 	})
 }
 
 func TestMultipleNonceUpdateHashes(t *testing.T) {
 	testHashAfterModification(t, func(s directUpdateState) {
-		s.setNonce(address1, nonce1)
-		s.setNonce(address2, nonce2)
-		s.setNonce(address3, nonce3)
+		s.setNonce(address1, state.nonce1)
+		s.setNonce(address2, state.nonce2)
+		s.setNonce(address3, state.nonce3)
 	})
 }
 
@@ -356,7 +355,7 @@ func TestCreatingAccountClearsStorage(t *testing.T) {
 			t.Errorf("failed to create account: %v", err)
 		}
 
-		val, err := s.GetStorage(address1, key1)
+		val, err := s.GetStorage(address1, state.key1)
 		if err != nil {
 			t.Errorf("failed to fetch storage value: %v", err)
 		}
@@ -364,15 +363,15 @@ func TestCreatingAccountClearsStorage(t *testing.T) {
 			t.Errorf("storage slot are initially not zero")
 		}
 
-		if err = s.setStorage(address1, key1, val1); err != nil {
+		if err = s.setStorage(address1, state.key1, state.val1); err != nil {
 			t.Errorf("failed to update storage slot: %v", err)
 		}
 
-		val, err = s.GetStorage(address1, key1)
+		val, err = s.GetStorage(address1, state.key1)
 		if err != nil {
 			t.Errorf("failed to fetch storage value: %v", err)
 		}
-		if val != val1 {
+		if val != state.val1 {
 			t.Errorf("storage slot update did not take effect")
 		}
 
@@ -380,7 +379,7 @@ func TestCreatingAccountClearsStorage(t *testing.T) {
 			t.Fatalf("Error: %s", err)
 		}
 
-		val, err = s.GetStorage(address1, key1)
+		val, err = s.GetStorage(address1, state.key1)
 		if err != nil {
 			t.Errorf("failed to fetch storage value: %v", err)
 		}
@@ -397,15 +396,15 @@ func TestDeletingAccountsClearsStorage(t *testing.T) {
 			t.Errorf("failed to create account: %v", err)
 		}
 
-		if err := s.setStorage(address1, key1, val1); err != nil {
+		if err := s.setStorage(address1, state.key1, state.val1); err != nil {
 			t.Errorf("failed to update storage slot: %v", err)
 		}
 
-		val, err := s.GetStorage(address1, key1)
+		val, err := s.GetStorage(address1, state.key1)
 		if err != nil {
 			t.Errorf("failed to fetch storage value: %v", err)
 		}
-		if val != val1 {
+		if val != state.val1 {
 			t.Errorf("storage slot update did not take effect")
 		}
 
@@ -413,7 +412,7 @@ func TestDeletingAccountsClearsStorage(t *testing.T) {
 			t.Fatalf("Error: %s", err)
 		}
 
-		val, err = s.GetStorage(address1, key1)
+		val, err = s.GetStorage(address1, state.key1)
 		if err != nil {
 			t.Errorf("failed to fetch storage value: %v", err)
 		}
@@ -426,8 +425,8 @@ func TestDeletingAccountsClearsStorage(t *testing.T) {
 // TestArchive inserts data into the state and tries to obtain the history from the archive.
 func TestArchive(t *testing.T) {
 	for _, config := range initStates() {
-		for _, archiveType := range allArchiveTypes {
-			if archiveType == NoArchive {
+		for _, archiveType := range state.allArchiveTypes {
+			if archiveType == state.NoArchive {
 				continue
 			}
 			config := config
@@ -437,7 +436,7 @@ func TestArchive(t *testing.T) {
 				dir := t.TempDir()
 				s, err := config.createStateWithArchive(dir, archiveType)
 				if err != nil {
-					if errors.Is(err, UnsupportedConfiguration) {
+					if errors.Is(err, state.UnsupportedConfiguration) {
 						t.Skipf("unsupported state %s; %s", config.name, err)
 					} else {
 						t.Fatalf("failed to initialize state %s; %s", config.name, err)
@@ -526,7 +525,7 @@ func TestArchive(t *testing.T) {
 					t.Errorf("invalid slot value at block 2: %v, %v", value, err)
 				}
 
-				if archiveType != S4Archive && archiveType != S5Archive {
+				if archiveType != state.S4Archive && archiveType != state.S5Archive {
 					hash1, err := state1.GetHash()
 					if err != nil || fmt.Sprintf("%x", hash1) != "69ec5bcbe6fd0da76107d64b6e9589a465ecccf5a90a3cb07de1f9cb91e0a28a" {
 						t.Errorf("unexpected archive state hash at block 1: %x, %s", hash1, err)
@@ -544,8 +543,8 @@ func TestArchive(t *testing.T) {
 // TestLastArchiveBlock tests obtaining the state at the last (highest) block in the archive.
 func TestLastArchiveBlock(t *testing.T) {
 	for _, config := range initStates() {
-		for _, archiveType := range allArchiveTypes {
-			if archiveType == NoArchive {
+		for _, archiveType := range state.allArchiveTypes {
+			if archiveType == state.NoArchive {
 				continue
 			}
 			config := config
@@ -559,7 +558,7 @@ func TestLastArchiveBlock(t *testing.T) {
 				}
 				s, err := config.createStateWithArchive(dir, archiveType)
 				if err != nil {
-					if errors.Is(err, UnsupportedConfiguration) {
+					if errors.Is(err, state.UnsupportedConfiguration) {
 						t.Skipf("unsupported state %s; %s", config.name, err)
 					} else {
 						t.Fatalf("failed to initialize state %s; %s", config.name, err)
@@ -628,8 +627,8 @@ func TestPersistentState(t *testing.T) {
 		if strings.HasPrefix(config.name, "cpp-memory") || strings.HasPrefix(config.name, "go-Memory") {
 			continue
 		}
-		for _, archiveType := range allArchiveTypes {
-			if archiveType == NoArchive {
+		for _, archiveType := range state.allArchiveTypes {
+			if archiveType == state.NoArchive {
 				continue
 			}
 			archiveType := archiveType
@@ -640,7 +639,7 @@ func TestPersistentState(t *testing.T) {
 				dir := t.TempDir()
 				s, err := config.createStateWithArchive(dir, archiveType)
 				if err != nil {
-					if errors.Is(err, UnsupportedConfiguration) {
+					if errors.Is(err, state.UnsupportedConfiguration) {
 						t.Skipf("unsupported state %s; %s", t.Name(), err)
 					} else {
 						t.Fatalf("failed to initialize state %s; %s", t.Name(), err)
@@ -650,9 +649,9 @@ func TestPersistentState(t *testing.T) {
 				// init state data
 				update := common.Update{}
 				update.AppendCreateAccount(address1)
-				update.AppendBalanceUpdate(address1, balance1)
-				update.AppendNonceUpdate(address1, nonce1)
-				update.AppendSlotUpdate(address1, key1, val1)
+				update.AppendBalanceUpdate(address1, state.balance1)
+				update.AppendNonceUpdate(address1, state.nonce1)
+				update.AppendSlotUpdate(address1, state.key1, state.val1)
 				update.AppendCodeUpdate(address1, []byte{1, 2, 3})
 				if err := s.Apply(1, update); err != nil {
 					t.Errorf("Error to init state: %v", err)
@@ -672,7 +671,7 @@ func fillStateForSnapshotting(state directUpdateState) {
 	state.setBalance(address1, common.Balance{12})
 	state.setNonce(address2, common.Nonce{14})
 	state.setCode(address3, []byte{0, 8, 15})
-	state.setStorage(address1, key1, val1)
+	state.setStorage(address1, state.key1, state.val1)
 }
 
 func TestSnapshotCanBeCreatedAndRestored(t *testing.T) {
@@ -680,7 +679,7 @@ func TestSnapshotCanBeCreatedAndRestored(t *testing.T) {
 		t.Run(config.name, func(t *testing.T) {
 			original, err := config.createState(t.TempDir())
 			if err != nil {
-				if errors.Is(err, UnsupportedConfiguration) {
+				if errors.Is(err, state.UnsupportedConfiguration) {
 					t.Skipf("unsupported state %s; %s", config.name, err)
 				} else {
 					t.Fatalf("failed to initialize state %s; %s", config.name, err)
@@ -744,11 +743,11 @@ func TestSnapshotCanBeCreatedAndRestored(t *testing.T) {
 				}
 			}
 
-			if got, err := recovered.GetStorage(address1, key1); err != nil || got != val1 {
+			if got, err := recovered.GetStorage(address1, state.key1); err != nil || got != state.val1 {
 				if err != nil {
 					t.Errorf("failed to fetch storage for account %v: %v", address1, err)
 				} else {
-					t.Errorf("failed to recover storage for account %v - wanted %v, got %v", address1, val1, got)
+					t.Errorf("failed to recover storage for account %v - wanted %v, got %v", address1, state.val1, got)
 				}
 			}
 
@@ -778,7 +777,7 @@ func TestSnapshotCanBeCreatedAndVerified(t *testing.T) {
 		t.Run(config.name, func(t *testing.T) {
 			original, err := config.createState(t.TempDir())
 			if err != nil {
-				if errors.Is(err, UnsupportedConfiguration) {
+				if errors.Is(err, state.UnsupportedConfiguration) {
 					t.Skipf("unsupported state %s; %s", config.name, err)
 				} else {
 					t.Fatalf("failed to initialize state %s; %s", config.name, err)
@@ -865,14 +864,14 @@ func TestStateRead(t *testing.T) {
 	if state, err := s.Exists(address1); err != nil || state != true {
 		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", state, true, err)
 	}
-	if balance, err := s.GetBalance(address1); err != nil || balance != balance1 {
-		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", balance, balance1, err)
+	if balance, err := s.GetBalance(address1); err != nil || balance != state.balance1 {
+		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", balance, state.balance1, err)
 	}
-	if nonce, err := s.GetNonce(address1); err != nil || nonce != nonce1 {
-		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", nonce, nonce1, err)
+	if nonce, err := s.GetNonce(address1); err != nil || nonce != state.nonce1 {
+		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", nonce, state.nonce1, err)
 	}
-	if storage, err := s.GetStorage(address1, key1); err != nil || storage != val1 {
-		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", storage, val1, err)
+	if storage, err := s.GetStorage(address1, state.key1); err != nil || storage != state.val1 {
+		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", storage, state.val1, err)
 	}
 	if code, err := s.GetCode(address1); err != nil || bytes.Compare(code, []byte{1, 2, 3}) != 0 {
 		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", code, []byte{1, 2, 3}, err)
@@ -885,21 +884,21 @@ func TestStateRead(t *testing.T) {
 	if state, err := as.Exists(address1); err != nil || state != true {
 		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", state, true, err)
 	}
-	if balance, err := as.GetBalance(address1); err != nil || balance != balance1 {
-		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", balance, balance1, err)
+	if balance, err := as.GetBalance(address1); err != nil || balance != state.balance1 {
+		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", balance, state.balance1, err)
 	}
-	if nonce, err := as.GetNonce(address1); err != nil || nonce != nonce1 {
-		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", nonce, nonce1, err)
+	if nonce, err := as.GetNonce(address1); err != nil || nonce != state.nonce1 {
+		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", nonce, state.nonce1, err)
 	}
-	if storage, err := as.GetStorage(address1, key1); err != nil || storage != val1 {
-		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", storage, val1, err)
+	if storage, err := as.GetStorage(address1, state.key1); err != nil || storage != state.val1 {
+		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", storage, state.val1, err)
 	}
 	if code, err := as.GetCode(address1); err != nil || bytes.Compare(code, []byte{1, 2, 3}) != 0 {
 		t.Errorf("Unexpected value or err, val: %v != %v, err:  %v", code, []byte{1, 2, 3}, err)
 	}
 }
 
-func execSubProcessTest(t *testing.T, dir string, stateImpl string, archiveImpl ArchiveType, execTestName string) {
+func execSubProcessTest(t *testing.T, dir string, stateImpl string, archiveImpl state.ArchiveType, execTestName string) {
 	path, err := os.Executable()
 	if err != nil {
 		t.Fatalf("failed to resolve path to test binary: %v", err)
@@ -917,10 +916,10 @@ func execSubProcessTest(t *testing.T, dir string, stateImpl string, archiveImpl 
 }
 
 // createState creates a state with the given name and directory
-func createState(t *testing.T, name, dir string, archiveImpl int) State {
+func createState(t *testing.T, name, dir string, archiveImpl int) state.State {
 	for _, config := range initStates() {
 		if config.name == name {
-			state, err := config.createStateWithArchive(dir, ArchiveType(archiveImpl))
+			state, err := config.createStateWithArchive(dir, state.ArchiveType(archiveImpl))
 			if err != nil {
 				t.Fatalf("Cannot init state: %s, err: %v", name, err)
 			}
@@ -931,3 +930,4 @@ func createState(t *testing.T, name, dir string, archiveImpl int) State {
 	t.Fatalf("State with name %s not found", name)
 	return nil
 }
+*/

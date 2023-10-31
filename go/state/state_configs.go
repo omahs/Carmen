@@ -85,15 +85,11 @@ const (
 	GoFileNoCache            = "go-file-nocache"
 	GoLevelDb                = "go-ldb"
 	GoLevelDbNoCache         = "go-ldb-nocache"
-	CppMemory                = "cpp-memory"
-	CppFile                  = "cpp-file"
-	CppLevelDb               = "cpp-ldb"
 )
 
 func GetAllVariants() []Variant {
 	return []Variant{
 		GoMemory, GoFile, GoFileNoCache, GoLevelDb, GoLevelDbNoCache,
-		CppMemory, CppFile, CppLevelDb,
 	}
 }
 
@@ -118,7 +114,7 @@ type Parameters struct {
 // unsupported feature.
 const UnsupportedConfiguration = common.ConstError("unsupported configuration")
 
-// NewState is the public interface fro creating Carmen state instances. If for the
+// NewState is the public interface for creating Carmen state instances. If for the
 // given parameters a state can be constructed, the resulting state is returned. If
 // construction fails, an error is reported. If the requested configuration is not
 // supported, the error is an UnsupportedConfiguration error.
@@ -134,12 +130,6 @@ func NewState(params Parameters) (State, error) {
 		return newGoLeveLIndexAndStoreState(params)
 	case GoLevelDb:
 		return newGoCachedLeveLIndexAndStoreState(params)
-	case CppMemory:
-		return newCppInMemoryState(params)
-	case CppFile:
-		return newCppFileBasedState(params)
-	case CppLevelDb:
-		return newCppLevelDbBasedState(params)
 	default:
 		return nil, fmt.Errorf("%w: unknown variant %s", UnsupportedConfiguration, params.Variant)
 	}

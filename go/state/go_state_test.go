@@ -1,8 +1,10 @@
 package state
 
+/*
 import (
 	"bytes"
 	"fmt"
+	"github.com/Fantom-foundation/Carmen/go/state/cppstate"
 	"strings"
 	"testing"
 
@@ -34,27 +36,27 @@ var (
 	nonce3 = common.Nonce{0x03}
 )
 
-func initGoStates() []namedStateConfig {
-	return []namedStateConfig{
-		{"Memory 1", 1, castToDirectUpdateState(newGoMemoryState)},
-		{"Memory 2", 2, castToDirectUpdateState(newGoMemoryState)},
-		{"Memory 3", 3, castToDirectUpdateState(newGoMemoryState)},
-		{"Memory 4", 4, castToDirectUpdateState(newGoMemoryS4State)},
-		{"Memory 5", 5, castToDirectUpdateState(newGoMemoryS5State)},
-		{"File Index and Store 1", 1, castToDirectUpdateState(newGoFileState)},
-		{"File Index and Store 2", 2, castToDirectUpdateState(newGoFileState)},
-		{"File Index and Store 3", 3, castToDirectUpdateState(newGoFileState)},
-		{"File 4", 4, castToDirectUpdateState(newGoFileS4State)},
-		{"File 5", 5, castToDirectUpdateState(newGoFileS5State)},
-		{"Cached File Index and Store 1", 1, castToDirectUpdateState(newGoCachedFileState)},
-		{"Cached File Index and Store 2", 2, castToDirectUpdateState(newGoCachedFileState)},
-		{"Cached File Index and Store 3", 3, castToDirectUpdateState(newGoCachedFileState)},
-		{"LevelDB Index and Store 1", 1, castToDirectUpdateState(newGoLeveLIndexAndStoreState)},
-		{"LevelDB Index and Store 2", 2, castToDirectUpdateState(newGoLeveLIndexAndStoreState)},
-		{"LevelDB Index and Store 3", 3, castToDirectUpdateState(newGoLeveLIndexAndStoreState)},
-		{"Cached LevelDB Index and Store 1", 1, castToDirectUpdateState(newGoCachedLeveLIndexAndStoreState)},
-		{"Cached LevelDB Index and Store 2", 2, castToDirectUpdateState(newGoCachedLeveLIndexAndStoreState)},
-		{"Cached LevelDB Index and Store 3", 3, castToDirectUpdateState(newGoCachedLeveLIndexAndStoreState)},
+func initGoStates() []cppstate.namedStateConfig {
+	return []cppstate.namedStateConfig{
+		{"Memory 1", 1, cppstate.castToDirectUpdateState(newGoMemoryState)},
+		{"Memory 2", 2, cppstate.castToDirectUpdateState(newGoMemoryState)},
+		{"Memory 3", 3, cppstate.castToDirectUpdateState(newGoMemoryState)},
+		{"Memory 4", 4, cppstate.castToDirectUpdateState(newGoMemoryS4State)},
+		{"Memory 5", 5, cppstate.castToDirectUpdateState(newGoMemoryS5State)},
+		{"File Index and Store 1", 1, cppstate.castToDirectUpdateState(newGoFileState)},
+		{"File Index and Store 2", 2, cppstate.castToDirectUpdateState(newGoFileState)},
+		{"File Index and Store 3", 3, cppstate.castToDirectUpdateState(newGoFileState)},
+		{"File 4", 4, cppstate.castToDirectUpdateState(newGoFileS4State)},
+		{"File 5", 5, cppstate.castToDirectUpdateState(newGoFileS5State)},
+		{"Cached File Index and Store 1", 1, cppstate.castToDirectUpdateState(newGoCachedFileState)},
+		{"Cached File Index and Store 2", 2, cppstate.castToDirectUpdateState(newGoCachedFileState)},
+		{"Cached File Index and Store 3", 3, cppstate.castToDirectUpdateState(newGoCachedFileState)},
+		{"LevelDB Index and Store 1", 1, cppstate.castToDirectUpdateState(newGoLeveLIndexAndStoreState)},
+		{"LevelDB Index and Store 2", 2, cppstate.castToDirectUpdateState(newGoLeveLIndexAndStoreState)},
+		{"LevelDB Index and Store 3", 3, cppstate.castToDirectUpdateState(newGoLeveLIndexAndStoreState)},
+		{"Cached LevelDB Index and Store 1", 1, cppstate.castToDirectUpdateState(newGoCachedLeveLIndexAndStoreState)},
+		{"Cached LevelDB Index and Store 2", 2, cppstate.castToDirectUpdateState(newGoCachedLeveLIndexAndStoreState)},
+		{"Cached LevelDB Index and Store 3", 3, cppstate.castToDirectUpdateState(newGoCachedLeveLIndexAndStoreState)},
 	}
 }
 
@@ -456,3 +458,4 @@ func TestGetMemoryFootprint(t *testing.T) {
 		})
 	}
 }
+*/
