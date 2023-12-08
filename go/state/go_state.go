@@ -73,6 +73,9 @@ func newGoState(live LiveDB, archive archive.Archive, cleanup []func()) State {
 			defer runtime.UnlockOSThread()
 			defer close(flush)
 			defer close(done)
+
+			fmt.Printf("archive writing thread started\n")
+
 			// Process all incoming updates, no not stop on errors.
 			for update := range in {
 				// If there is no update, the state is asking for a flush signal.
@@ -81,6 +84,7 @@ func newGoState(live LiveDB, archive archive.Archive, cleanup []func()) State {
 						err <- issue
 					}
 					flush <- true
+					fmt.Printf("archive flush done\n")
 				} else {
 					// Otherwise, process the update.
 					issue := res.archive.Add(update.block, *update.update, update.updateHints)
@@ -92,6 +96,7 @@ func newGoState(live LiveDB, archive archive.Archive, cleanup []func()) State {
 					}
 				}
 			}
+			fmt.Printf("archive writing thread finished\n")
 		}()
 
 		res.archiveWriter = in
@@ -214,18 +219,23 @@ func (s *GoState) Close() (lastErr error) {
 
 	// Shut down archive writer background worker.
 	if s.archiveWriter != nil {
+		fmt.Printf("terminating archive thread...\n")
 		// Close archive stream, signaling writer to shut down.
 		close(s.archiveWriter)
 		// Wait for the shutdown to be complete.
 		<-s.archiveWriterDone
 		s.archiveWriter = nil
+		fmt.Printf("archive thread terminated...\n")
 	}
 
 	// Close the archive.
 	if s.archive != nil {
+		fmt.Printf("closing archive...\n")
 		if err := s.archive.Close(); err != nil {
 			lastErr = err
+			fmt.Printf("archive closing err: %v\n", err)
 		}
+		fmt.Printf("archive closed\n")
 	}
 
 	if s.cleanup != nil {

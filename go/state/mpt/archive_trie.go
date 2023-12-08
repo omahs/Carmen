@@ -316,11 +316,11 @@ func loadRootsFrom(reader io.Reader) ([]Root, error) {
 			if err == io.EOF {
 				return res, nil
 			}
-			return nil, fmt.Errorf("invalid root file format: %v", err)
+			return nil, fmt.Errorf("invalid root file format - failed to read node id after reading of %d items: %w", len(res), err)
 		}
 
 		if _, err := io.ReadFull(reader, hash[:]); err != nil {
-			return nil, fmt.Errorf("invalid root file format: %v", err)
+			return nil, fmt.Errorf("invalid root file format - failed to read hash after reading of %d items: %w", len(res), err)
 		}
 
 		var id NodeId

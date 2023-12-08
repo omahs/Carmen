@@ -22,7 +22,7 @@ func newS5State(params Parameters, state *mpt.MptState) (State, error) {
 	}
 	arch, archiveCleanup, err := openArchive(params)
 	if err != nil {
-		return nil, errors.Join(err, state.Close())
+		return nil, fmt.Errorf("failed to open archive: %w", errors.Join(err, state.Close()))
 	}
 	return newGoState(&goSchema5{
 		MptState: state,
