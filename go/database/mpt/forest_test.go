@@ -632,6 +632,72 @@ func TestForest_Flush_Fail_CannotReadNode(t *testing.T) {
 	}
 }
 
+func TestForest_Flush_Async_To_Update_MustNotRaceCondition(t *testing.T) {
+	// this test used to produce race condition when executed many times:
+	//  go test ./database/mpt -count 1000 -race -run TestForest_Flush_Async_To_Update_MustNotRaceCondition -timeout 60m
+	for _, variant := range fileAndMemVariants {
+		for _, config := range allMptConfigs {
+			t.Run(fmt.Sprintf("%s-%s", variant.name, config.Name), func(t *testing.T) {
+				directory := t.TempDir()
+				var err error
+
+				forestConfig := ForestConfig{Mode: Mutable, CacheCapacity: 1000}
+				forest, err := variant.factory(directory, config, forestConfig)
+				if err != nil {
+					t.Fatalf("failed to open forest: %v", err)
+				}
+				defer func() {
+					if err := forest.Close(); err != nil {
+						t.Fatalf("cannot close forest: %v", err)
+					}
+				}()
+
+				// create an account and insert slots in it
+				address := common.Address{0xA}
+				root := NewNodeReference(EmptyId())
+				root, err = forest.SetAccountInfo(&root, address, AccountInfo{Balance: common.Balance{0x1}})
+				if err != nil {
+					t.Fatalf("cannot create account: %v", err)
+				}
+				keys := getTestKeys(1000)
+				for i, key := range keys {
+					root, err = forest.SetValue(&root, address, key, common.Value{byte(i)})
+					if err != nil {
+						t.Fatalf("cannot create storage: %v", err)
+					}
+				}
+
+				if _, _, err := forest.updateHashesFor(&root); err != nil {
+					t.Fatalf("cannot update hashes: %v", err)
+				}
+
+				// Now we flush in another thread while modifying the account.
+				wgStart := &sync.WaitGroup{}
+				wgStart.Add(1)
+				wgDone := &sync.WaitGroup{}
+				wgDone.Add(1)
+				go func() {
+					defer wgDone.Done()
+					wgStart.Done()
+					// flush many times trying to get race condition
+					if err := forest.Flush(); err != nil {
+						t.Errorf("cannot flush: %v", err)
+					}
+				}()
+
+				wgStart.Wait()
+				// Update of this account causes evictions in the cache.
+				// This should not cause failures in Flush, which is flushing
+				// nodes from the same cache.
+				if _, err := forest.SetAccountInfo(&root, address, AccountInfo{}); err != nil {
+					t.Fatalf("cannot remove account: %v", err)
+				}
+				wgDone.Wait()
+			})
+		}
+	}
+}
+
 func TestForest_flushNode_EmptyId(t *testing.T) {
 	for _, variant := range variants {
 		for _, config := range allMptConfigs {
