@@ -47,6 +47,8 @@ func TestDecoder_CorruptedRlp(t *testing.T) {
 	longStr := rlp.String{Str: []byte{0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}}
 	tooLongNumberItemsList := rlp.String{Str: rlp.EncodeInto([]byte{}, rlp.List{Items: []rlp.Item{longStr, longStr, longStr, longStr}})}
 
+	list := rlp.List{Items: []rlp.Item{str, str, str, str}}
+
 	tests := []struct {
 		name string
 		rlp  []byte
@@ -66,6 +68,10 @@ func TestDecoder_CorruptedRlp(t *testing.T) {
 		{ // could be account, but nested inner list has too long strings
 			name: "long strings cannot convert to number",
 			rlp:  rlp.EncodeInto([]byte{}, rlp.List{Items: []rlp.Item{str, tooLongNumberItemsList}}),
+		},
+		{ // could be ext or leaf, but first item is not string
+			name: "long strings cannot convert to number",
+			rlp:  rlp.EncodeInto([]byte{}, rlp.List{Items: []rlp.Item{list, str}}),
 		},
 	}
 
